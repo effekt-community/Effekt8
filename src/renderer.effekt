@@ -1,0 +1,18 @@
+module src/renderer
+
+/*
+The Renderer for the Chip8 emulator.
+To support multiple backends, we define a Renderer interface.
+Every backend must implement this interface.
+*/
+
+import bytearray
+effect start(rom: ByteArray): Unit
+
+interface Renderer {
+  def init(): Unit / start
+  def clear(): Unit
+  def draw(x: Int, y: Int): Unit
+  def update(): Unit
+  def log(msg: String): Unit
+}
