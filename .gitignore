@@ -7,3 +7,6 @@ result-*
 
 # MacOS
 .DS_Store
+
+# ROMs
+*.ch8
