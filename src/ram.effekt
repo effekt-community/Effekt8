@@ -1,0 +1,56 @@
+module src/ram
+
+import bytearray
+
+interface Ram {
+  def get(address: Int): Byte
+  def set(address: Int, byte: Byte): Unit
+  def init(rom: ByteArray): Unit  
+}
+
+def get(ram: ByteArray, address: Int): Byte = ram.unsafeGet(address)
+def set(ram: ByteArray, address: Int, byte: Byte): Unit = ram.unsafeSet(address, byte)
+def set(ram: ByteArray, address: Int, value: Int): Unit = ram.unsafeSet(address, value.toByte)
+
+// Load the predefined fontset. There is no better way to do this, since they are hardcoded values.
+def loadFont(ram: ByteArray): Unit = {
+  // Since there is no way to represent hex literals in Effekt, we have to use decimal literals and convert them to bytes.
+  val fontSet: List[Byte] = [
+    240.toByte, 144.toByte, 144.toByte, 144.toByte, 240.toByte, // 0
+    32.toByte,  96.toByte,  32.toByte,  32.toByte,  112.toByte, // 1
+    240.toByte, 16.toByte,  240.toByte, 128.toByte, 240.toByte, // 2
+    240.toByte, 16.toByte,  240.toByte, 16.toByte,  240.toByte, // 3
+    144.toByte, 144.toByte, 240.toByte, 16.toByte,  16.toByte,  // 4
+    240.toByte, 128.toByte, 240.toByte, 16.toByte,  240.toByte, // 5
+    240.toByte, 128.toByte, 240.toByte, 144.toByte, 240.toByte, // 6
+    240.toByte, 16.toByte,  32.toByte,  64.toByte,  64.toByte,  // 7
+    240.toByte, 144.toByte, 240.toByte, 144.toByte, 240.toByte, // 8
+    240.toByte, 144.toByte, 240.toByte, 16.toByte,  240.toByte, // 9
+    240.toByte, 144.toByte, 240.toByte, 144.toByte, 144.toByte, // A
+    224.toByte, 144.toByte, 224.toByte, 144.toByte, 224.toByte, // B
+    240.toByte, 128.toByte, 128.toByte, 128.toByte, 240.toByte, // C
+    224.toByte, 144.toByte, 144.toByte, 144.toByte, 224.toByte, // D
+    240.toByte, 128.toByte, 240.toByte, 128.toByte, 240.toByte, // E
+    240.toByte, 128.toByte, 240.toByte, 128.toByte, 128.toByte  // F
+  ]
+  fontSet.foreachIndex { (i, byte) =>
+    ram.set(i, byte)
+  }
+}
+
+// Load the ROM into memory starting at 0x200 (512)
+def loadRom(ram: ByteArray, rom: ByteArray): Unit = rom.foreachIndex { (i, byte) =>
+  set(ram, 512 + i, byte)
+}
+
+def makeRam() = {
+  var ram: ByteArray in global = allocate(4096) // 4KB of memory
+  new Ram {
+    def get(address: Int) = get(ram, address)
+    def set(address: Int, byte: Byte) = set(ram, address, byte)
+    def init(rom: ByteArray) = {
+      loadFont(ram)
+      loadRom(ram, rom)
+    }
+  }
+}
