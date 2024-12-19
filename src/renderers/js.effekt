@@ -1,0 +1,107 @@
+module src/renderers/js
+
+import src/renderer
+import src/cpu
+import bytearray
+
+// js ffi
+extern type Node
+extern io def getElementById(id: String): Node = jsWeb "document.getElementById(${id})"
+extern io def addListener(event: String, node: Node, handler: () =>  Unit at {io, global}): Unit = jsWeb "${node}.addEventListener(${event}, () => $effekt.runToplevel((ks) => ${handler}(ks)))"
+
+// Custom logging function that logs to the console and the page
+extern io def log(msg: String): Unit = jsWeb "log(${msg});"
+extern io def loadRom(): ByteArray = jsWeb "rom ? rom : new Uint8Array(0)"
+
+extern jsWeb """
+  let rom = undefined;
+  // Global Log Function
+  function log(msg) {
+    const message = new Date().toLocaleTimeString() + ' - ' + msg + ' \n'
+    console.log(message);
+    // Logging with timestamp
+    document.getElementById('logs').innerText += message;
+  }
+
+  function romCheck() {
+    document.getElementById('rom').addEventListener('change', async (event) => {
+      rom = await event.target.files[0].bytes();
+      document.getElementById('start').removeAttribute('disabled');
+    });
+  }
+"""
+
+val pageContent = """
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Effekt8</title>
+    </head>
+    <body>
+      <h1>Effekt8: Chip8 Simulator written in Effekt Language</h1>
+      <label for="rom">Select a Chip8 ROM:</label>
+      <input type="file" id="rom" accept=".ch8" />
+      <button id="start" disabled>Start</button>
+      <hr />
+      <canvas id="canvas" width="640" height="320"></canvas>
+      <hr />
+      <div>
+        <h3>Logs:</h3>
+        <pre id="logs"></pre>
+      </div>
+    </body>
+  </html>
+"""
+
+// JS Renderer has 640x320 pixels, so we need to scale the screen by 10x.
+val width = 640
+val height = 320
+val scale = 10
+
+extern io def renderPage(content: String): Unit = jsWeb "document.write(${content}); romCheck();"
+// Initialize the screen
+def init() {run: () => Unit}: Unit = {
+  renderPage(pageContent)
+  val startButton = getElementById("start")
+  def eventHandler(): Unit = {
+      log("Start button clicked! Loading ROM...")
+      val rom: ByteArray = loadRom()
+      if (rom.size() != 0) {
+        log("ROM with size: " ++ show(rom.size()) ++ " loaded!")
+        // TODO: Start the emulator somehow
+        run()
+      } else {
+        log("No ROM loaded! Please select a ROM file.")
+      }
+  }
+  
+  addListener("click", startButton, eventHandler)
+}
+
+// Clear the screen (set black canvas)
+extern io def clear(): Unit = jsWeb """
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+"""
+
+// Draw at (x, y) on the screen
+extern io def draw(x: Int, y: Int): Unit = jsWeb """
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'white';
+  ctx.fillRect(${x * 10}, ${y * 10}, 10, 10);
+"""
+namespace JSRenderer {
+  // make JS Renderer 
+  def makeRenderer: Renderer = new Renderer {
+    def init() = init()
+    def clear() = clear()
+    def draw(x: Int, y: Int) = draw(x, y)
+    def update() = ()
+    def log(msg: String) = log(msg)
+  }
+}
