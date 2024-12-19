@@ -1,5 +1,18 @@
 module main // must be named same as the file!
 
-import src/lib
+import src/cpu
+import src/renderer
+import src/renderers/js
+import bytearray
 
-def main(): Unit = println(helloWorld())
+def main(): Unit = {
+  // Using the JS backend
+  def r = JSRenderer::makeRenderer
+  try {
+    r.init()
+  } with start { rom =>
+    log("ROM loaded to the functionnn!")
+    resume(())
+  }
+  ()
+}

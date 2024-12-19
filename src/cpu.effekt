@@ -1,0 +1,42 @@
+module src/cpu
+
+import bytearray
+import src/ram
+import src/renderer
+
+/*
+The CPU for the Chip8 emulator.
+CPU Cycle and Effects:
+1. Fetch Opcode
+2. Decode Opcode
+3. Execute Opcode
+4. Update Timers
+5. Update Display
+6. Wait for next cycle
+*/
+
+namespace cpu {
+  def run(rom: ByteArray) {r: Renderer}: Unit = {
+    // Initialize the RAM
+    var ram = makeRam()
+    // Load the predefined fontset into the RAM and load the ROM
+    ram.init(rom)
+    
+    // Initialize the CPU registers
+    var v: ByteArray = allocate(16) // 16 8-bit registers
+    var i: Int = 0 // 16-bit register treat as 12-bit !!!
+
+    var delay: Byte = 0.toByte // Delay timer
+    var sound: Byte = 0.toByte // Sound timer
+
+    var pc: Int = 512 // Program counter
+    var sp: Byte = 0.toByte // Stack pointer
+    var stack: ByteArray = allocate(32) // Stack with 16 levels. Each level is 16-bit that is 2 bytes, so 32 bytes
+
+    // Main loop
+    // Fetch, Decode, Execute, Update Timers, Update Display
+    r.log("Starting the CPU...")
+    ()
+  }
+}
+
