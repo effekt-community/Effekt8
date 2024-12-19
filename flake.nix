@@ -33,7 +33,7 @@
           # version = "0.10.0";
 
           ## Select the backends that your project works on:
-          backends = with effekt-lib.effektBackends; [ js ];
+          backends = with effekt-lib.effektBackends; [ js-web ];
         };
 
         # Chooses the correct Effekt package.
