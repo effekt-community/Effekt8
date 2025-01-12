@@ -7,7 +7,7 @@ import bytearray
 // js ffi
 extern type Node
 extern io def getElementById(id: String): Node = jsWeb "document.getElementById(${id})"
-extern io def addListener(event: String, node: Node, handler: () =>  Unit at {io, global}): Unit = jsWeb "${node}.addEventListener(${event}, () => $effekt.runToplevel((ks) => ${handler}(ks)))"
+extern io def addListener(event: String, node: Node) {handler: () => Unit}: Unit = jsWeb "${node}.addEventListener(${event}, () => $effekt.runToplevel((ks) => ${box handler}(ks)))"
 
 // Custom logging function that logs to the console and the page
 extern io def log(msg: String): Unit = jsWeb "log(${msg});"
@@ -62,46 +62,55 @@ val scale = 10
 
 extern io def renderPage(content: String): Unit = jsWeb "document.write(${content}); romCheck();"
 // Initialize the screen
-def init() {run: () => Unit}: Unit = {
+def init(run: (ByteArray) => Unit at {io, global}) = {
   renderPage(pageContent)
   val startButton = getElementById("start")
-  def eventHandler(): Unit = {
-      log("Start button clicked! Loading ROM...")
-      val rom: ByteArray = loadRom()
-      if (rom.size() != 0) {
-        log("ROM with size: " ++ show(rom.size()) ++ " loaded!")
-        // TODO: Start the emulator somehow
-        run()
-      } else {
-        log("No ROM loaded! Please select a ROM file.")
-      }
-  }
   
-  addListener("click", startButton, eventHandler)
+  
+  addListener("click", startButton) {eventHandler {run}}
+}
+def eventHandler {onClick: (ByteArray) => Unit}: Unit = {
+  log("Start button clicked! Loading ROM...")
+  val rom: ByteArray = loadRom()
+  if (rom.size() != 0) {
+    log("ROM with size: " ++ show(rom.size()) ++ " loaded!")
+    // TODO: Start the emulator somehow
+    onClick(rom)
+  } else {
+    log("No ROM loaded! Please select a ROM file.")
+  }
 }
 
 // Clear the screen (set black canvas)
-extern io def clear(): Unit = jsWeb """
-  const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-"""
+def clear(): Unit = fill("black")
 
 // Draw at (x, y) on the screen
 extern io def draw(x: Int, y: Int): Unit = jsWeb """
+  (() => {
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
-  ctx.fillRect(${x * 10}, ${y * 10}, 10, 10);
+  ctx.fillRect(10 * ${x}, 10 * ${y}, 10, 10);
+  })();
 """
+
+extern io def fill(color: String): Unit = jsWeb """
+  (() => {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = ${color};
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  })();
+"""
+
 namespace JSRenderer {
   // make JS Renderer 
   def makeRenderer: Renderer = new Renderer {
-    def init() = init()
+    def init(run) = init(run)
     def clear() = clear()
     def draw(x: Int, y: Int) = draw(x, y)
     def update() = ()
     def log(msg: String) = log(msg)
+    def fill(color: String) = fill(color)
   }
 }

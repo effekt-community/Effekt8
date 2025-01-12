@@ -36,6 +36,8 @@ namespace cpu {
     // Main loop
     // Fetch, Decode, Execute, Update Timers, Update Display
     r.log("Starting the CPU...")
+    r.fill("black")
+    // TODO: Implement the main loop with effects
     ()
   }
 }

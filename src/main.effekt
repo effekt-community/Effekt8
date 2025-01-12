@@ -8,11 +8,9 @@ import bytearray
 def main(): Unit = {
   // Using the JS backend
   def r = JSRenderer::makeRenderer
-  try {
-    r.init()
-  } with start { rom =>
-    log("ROM loaded to the functionnn!")
-    resume(())
+  def test(rom: ByteArray) = {
+    cpu::run(rom) {r}
   }
+  r.init(test)
   ()
 }

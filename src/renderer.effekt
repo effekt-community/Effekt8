@@ -7,12 +7,12 @@ Every backend must implement this interface.
 */
 
 import bytearray
-effect start(rom: ByteArray): Unit
 
 interface Renderer {
-  def init(): Unit / start
+  def init(run: (ByteArray) => Unit at {io, global}): Unit
   def clear(): Unit
   def draw(x: Int, y: Int): Unit
+  def fill(color: String): Unit
   def update(): Unit
   def log(msg: String): Unit
 }
