@@ -1,16 +1,21 @@
 module main // must be named same as the file!
 
 import src/cpu
-import src/renderer
 import src/renderers/js
+import src/renderer
 import bytearray
 
 def main(): Unit = {
   // Using the JS backend
-  def r = JSRenderer::makeRenderer
-  def test(rom: ByteArray) = {
-    cpu::run(rom) {r}
+  region global {
+    def renderer: Renderer = JSRenderer::makeRenderer
+    def cpu_ = makeCPU() {renderer}
+    def plsRender(rom: ByteArray): Unit = {
+      cpu_.initCPU(rom)
+      renderer.update(box {() => cpu_.cycleCPU()})
+    }
+    renderer.init(plsRender)
+    ()
   }
-  r.init(test)
   ()
 }

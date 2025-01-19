@@ -13,6 +13,7 @@ interface Renderer {
   def clear(): Unit
   def draw(x: Int, y: Int): Unit
   def fill(color: String): Unit
-  def update(): Unit
+  def get(x: Int, y: Int): Bool
+  def update(f: () => Unit at {io, global}): Unit
   def log(msg: String): Unit
 }

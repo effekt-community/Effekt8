@@ -3,8 +3,8 @@ module src/ram
 import bytearray
 
 interface Ram {
-  def get(address: Int): Byte
-  def set(address: Int, byte: Byte): Unit
+  def getAddr(address: Int): Byte
+  def setAddr(address: Int, byte: Byte): Unit
   def init(rom: ByteArray): Unit  
 }
 
@@ -46,8 +46,8 @@ def loadRom(ram: ByteArray, rom: ByteArray): Unit = rom.foreachIndex { (i, byte)
 def makeRam() = {
   var ram: ByteArray in global = allocate(4096) // 4KB of memory
   new Ram {
-    def get(address: Int) = get(ram, address)
-    def set(address: Int, byte: Byte) = set(ram, address, byte)
+    def getAddr(address: Int) = get(ram, address)
+    def setAddr(address: Int, byte: Byte) = set(ram, address, byte)
     def init(rom: ByteArray) = {
       loadFont(ram)
       loadRom(ram, rom)

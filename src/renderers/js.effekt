@@ -1,7 +1,6 @@
 module src/renderers/js
 
 import src/renderer
-import src/cpu
 import bytearray
 
 // js ffi
@@ -12,7 +11,7 @@ extern io def addListener(event: String, node: Node) {handler: () => Unit}: Unit
 // Custom logging function that logs to the console and the page
 extern io def log(msg: String): Unit = jsWeb "log(${msg});"
 extern io def loadRom(): ByteArray = jsWeb "rom ? rom : new Uint8Array(0)"
-
+extern io def requestAnimationFrame {callback: () => Unit}: Unit = jsWeb "requestAnimationFrame(() => $effekt.runToplevel((ks) => ${box callback}(ks)))"
 extern jsWeb """
   let rom = undefined;
   // Global Log Function
@@ -20,7 +19,7 @@ extern jsWeb """
     const message = new Date().toLocaleTimeString() + ' - ' + msg + ' \n'
     console.log(message);
     // Logging with timestamp
-    document.getElementById('logs').innerText += message;
+    // document.getElementById('logs').innerText += message;
   }
 
   function romCheck() {
@@ -65,16 +64,14 @@ extern io def renderPage(content: String): Unit = jsWeb "document.write(${conten
 def init(run: (ByteArray) => Unit at {io, global}) = {
   renderPage(pageContent)
   val startButton = getElementById("start")
-  
-  
   addListener("click", startButton) {eventHandler {run}}
 }
+
 def eventHandler {onClick: (ByteArray) => Unit}: Unit = {
   log("Start button clicked! Loading ROM...")
   val rom: ByteArray = loadRom()
   if (rom.size() != 0) {
     log("ROM with size: " ++ show(rom.size()) ++ " loaded!")
-    // TODO: Start the emulator somehow
     onClick(rom)
   } else {
     log("No ROM loaded! Please select a ROM file.")
@@ -103,14 +100,30 @@ extern io def fill(color: String): Unit = jsWeb """
   })();
 """
 
+extern io def get(x: Int, y: Int): Bool = jsWeb """
+  (() => {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const pixel = ctx.getImageData(10 * ${x}, 10 * ${y}, 1, 1).data;
+    return pixel[0] === 255;
+  })();
+"""
+
+extern io def update(f: () => Unit at {io, global}): Unit = jsWeb """
+  setInterval(() => {
+    $effekt.runToplevel((ks) => ${f}(ks));
+  }, 1000 / 60);
+"""
+
 namespace JSRenderer {
   // make JS Renderer 
   def makeRenderer: Renderer = new Renderer {
     def init(run) = init(run)
     def clear() = clear()
     def draw(x: Int, y: Int) = draw(x, y)
-    def update() = ()
+    def update(f: () => Unit at {io, global}) = update(f)
     def log(msg: String) = log(msg)
     def fill(color: String) = fill(color)
+    def get(x: Int, y: Int) = get(x, y)
   }
 }

@@ -1,9 +1,11 @@
 module src/cpu
 
 import bytearray
+import queue
 import src/ram
 import src/renderer
 
+import io/time
 /*
 The CPU for the Chip8 emulator.
 CPU Cycle and Effects:
@@ -15,30 +17,285 @@ CPU Cycle and Effects:
 6. Wait for next cycle
 */
 
-namespace cpu {
-  def run(rom: ByteArray) {r: Renderer}: Unit = {
-    // Initialize the RAM
-    var ram = makeRam()
-    // Load the predefined fontset into the RAM and load the ROM
-    ram.init(rom)
-    
-    // Initialize the CPU registers
-    var v: ByteArray = allocate(16) // 16 8-bit registers
-    var i: Int = 0 // 16-bit register treat as 12-bit !!!
-
-    var delay: Byte = 0.toByte // Delay timer
-    var sound: Byte = 0.toByte // Sound timer
-
-    var pc: Int = 512 // Program counter
-    var sp: Byte = 0.toByte // Stack pointer
-    var stack: ByteArray = allocate(32) // Stack with 16 levels. Each level is 16-bit that is 2 bytes, so 32 bytes
-
-    // Main loop
-    // Fetch, Decode, Execute, Update Timers, Update Display
-    r.log("Starting the CPU...")
-    r.fill("black")
-    // TODO: Implement the main loop with effects
-    ()
-  }
+extern io def getNow(): Int = jsWeb "Date.now()"
+interface CPU {
+  def initCPU(rom: ByteArray): Unit
+  def cycleCPU(): Unit
 }
 
+def makeCPU() {r: Renderer} = {
+  // Initialize the RAM
+  var ram in global = makeRam()
+  
+  // Initialize the CPU registers
+  var v: ByteArray in global = allocate(16) // 16 8-bit registers
+  var i: Int in global = 0 // 16-bit register treat as 12-bit !!!
+
+  var delay: Byte in global = 0.toByte() // Delay timer
+  var sound: Byte in global = 0.toByte() // Sound timer
+
+  var pc: Int in global = 512 // Program counter
+  var sp: Byte in global = 0.toByte() // Stack pointer
+  // After checking the implementation of queue in Effekt, I realized that it also works as a stack, so I will use it as a stack
+  var stack in global = emptyQueue[Int](32) // Stack with 16 levels. Each level is 16-bit that is 2 bytes, so 32 bytes
+
+  var last_key_update_time in global = getNow()
+  var last_instruction_run_time in global = getNow()
+  var last_display_update_time in global = getNow()
+
+  new CPU {
+    def initCPU(rom: ByteArray) = {
+      ram.init(rom)
+      r.fill("black")
+    }
+    def cycleCPU() = {
+      val h = ram.getAddr(pc)
+      val l = ram.getAddr(pc + 1)
+      val inst = bitwiseOr(bitwiseShl(h.toInt(), 8), l.toInt())
+      // r.log("PC: " ++ show(pc))
+      // r.log("Instruction: " ++ show(inst))
+
+      // Decode
+      val opcode = bitwiseShr(bitwiseAnd(inst, 61440), 12)
+      val nnn = bitwiseAnd(inst, 4095)
+      val nn = bitwiseAnd(inst, 255)
+      val n = bitwiseAnd(inst, 15)
+      val x = bitwiseAnd(bitwiseShr(inst, 8), 15)
+      val y = bitwiseAnd(bitwiseShr(inst, 4), 15)
+
+      // Execute
+      opcode match {
+        case 0 => {
+          nn match {
+            // Clear the screen
+            case 224 => {
+              r.clear()
+              r.log("Clearing the screen...")
+              pc = pc + 2
+            }
+            // Return from a subroutine
+            case 238 => {
+              // pc = stack[Int].popFront[Int]().value[Int]()
+              pc = stack.popFront().getOrElse { 0 }
+            }
+          } else {
+            r.log("Unknown Instruction: " ++ show(inst))
+          }
+        }
+        // Jump to address NNN
+        case 1 => {
+          pc = nnn
+        }
+        // Call subroutine at NNN
+        case 2 => {
+          stack.pushFront(pc + 2)
+          pc = nnn
+        }
+        // Skip next instruction if VX == NN
+        case 3 => {
+          if (v.unsafeGet(x).toInt() == nn) {
+            pc = pc + 2
+          }
+          pc = pc + 2
+        }
+        // Skip next instruction if VX != NN
+        case 4 => {
+          if (v.unsafeGet(x).toInt() != nn) {
+            pc = pc + 2
+          }
+          pc = pc + 2
+        }
+        // Skip next instruction if VX == VY
+        case 5 => {
+          if (v.unsafeGet(x).toInt() == v.unsafeGet(y).toInt()) {
+            pc = pc + 2
+          }
+          pc = pc + 2
+        }
+        // Set VX = NN
+        case 6 => {
+          v.set(x, nn)
+          pc = pc + 2
+        }
+        // Set VX = VX + NN
+        case 7 => {
+          v.set(x, v.unsafeGet(x).toInt() + nn)
+          pc = pc + 2
+        }
+        case 8 => {
+          n match {
+            // Set VX = VY
+            case 0 => {
+              v.set(x, v.unsafeGet(y))
+            }
+            // Set VX = VX OR VY
+            case 1 => {
+              v.set(x, bitwiseOr(v.unsafeGet(x).toInt(), v.unsafeGet(y).toInt()))
+            }
+            // Set VX = VX AND VY
+            case 2 => {
+              v.set(x, bitwiseAnd(v.unsafeGet(x).toInt(), v.unsafeGet(y).toInt()))
+            }
+            // Set VX = VX XOR VY
+            case 3 => {
+              v.set(x, bitwiseXor(v.unsafeGet(x).toInt(), v.unsafeGet(y).toInt()))
+            }
+            // Set VX = VX + VY, set VF = carry
+            case 4 => {
+              val sum = v.unsafeGet(x).toInt() + v.unsafeGet(y).toInt()
+              v.set(15, if (sum > 255) 1 else 0)
+              v.set(x, sum)
+
+            }
+            // Set VX = VX - VY, set VF = NOT borrow
+            case 5 => {
+              v.set(15, if (v.unsafeGet(x).toInt() > v.unsafeGet(y).toInt()) 1 else 0)
+              v.set(x, v.unsafeGet(x).toInt() - v.unsafeGet(y).toInt())
+            }
+            // Set VX = VX SHR 1
+            case 6 => {
+              v.set(15, bitwiseAnd(v.unsafeGet(x).toInt(), 1))
+              v.set(x, bitwiseShr(v.unsafeGet(x).toInt(), 1))
+            }
+            // Set VX = VY - VX, set VF = NOT borrow
+            case 7 => {
+              v.set(15, if (v.unsafeGet(y).toInt() > v.unsafeGet(x).toInt()) 1 else 0)
+              v.set(x, v.unsafeGet(y).toInt() - v.unsafeGet(x).toInt())
+            }
+            // Set VX = VX SHL 1
+            case 14 => {
+              v.set(15, bitwiseAnd(v.unsafeGet(x).toInt(), 128))
+              v.set(x, bitwiseShl(v.unsafeGet(x).toInt(), 1))
+            }
+          } else {
+            r.log("Unknown Instruction: " ++ show(inst))
+          }
+          pc = pc + 2
+        }
+        // Skip next instruction if VX != VY
+        case 9 => {
+          if (v.unsafeGet(x).toInt() != v.unsafeGet(y).toInt()) {
+            pc = pc + 2
+          }
+          pc = pc + 2
+        }
+        // Set I = NNN
+        case 10 => {
+          i = nnn
+          pc = pc + 2
+        }
+        // Jump to location NNN + V0
+        case 11 => {
+          pc = nnn + v.unsafeGet(0).toInt()
+        }
+
+        // Set VX = random byte AND NN
+        case 12 => {
+          val randInt: Int = floor(random() * 255.0)
+          v.set(x, bitwiseAnd(randInt, nn))
+          pc = pc + 2
+        }
+        // Display n-byte sprite starting at memory location I at (VX, VY), set VF = collision
+        case 13 => {
+          val vx = v.unsafeGet(x).toInt()
+          val vy = v.unsafeGet(y).toInt()
+          var collision = false
+          var yline = 0
+          while (yline < n) {
+            val pixel = ram.getAddr(i + yline)
+            var xline = 0
+            while (xline < 8) {
+              if (bitwiseAnd(pixel.toInt(), bitwiseShr(128, xline)) != 0) {
+                if (r.get(vx + xline, vy + yline)) {
+                  collision = true
+                }
+                r.draw(vx + xline, vy + yline)
+                r.log("Drawing at: " ++ show(vx + xline) ++ ", " ++ show(vy + yline))
+              }
+              xline = xline + 1
+            }
+            yline = yline + 1
+          }
+          v.set(15, if (collision) 1 else 0)
+          pc = pc + 2
+        }
+        case 14 => {
+          nn match {
+            // Skip next instruction if key with the value of VX is pressed
+            case 161 => {
+              // TODO: missing keyboard input
+              ()
+            }
+            // Skip next instruction if key with the value of VX is not pressed
+            case 158 => {
+              // TODO: missing keyboard input
+              ()
+            }
+          } else {
+            r.log("Unknown Instruction: " ++ show(inst))
+          }
+        }
+        case 15 => {
+          nn match {
+            // Set VX = delay timer value
+            case 7 => {
+              v.set(x, delay)
+            }
+            // Wait for a key press, store the value of the key in VX
+            case 10 => {
+              // TODO: missing keyboard input
+              ()
+            }
+            // SET delay timer = VX
+            case 21 => {
+              delay = v.unsafeGet(x)
+            }
+            // Set sound timer = VX
+            case 24 => {
+              sound = v.unsafeGet(x)
+            }
+            // SET I = I + VX
+            case 30 => {
+              i = i + v.unsafeGet(x).toInt()
+            }
+            // Set I = location of sprite for digit VX
+            case 41 => {
+              i = v.unsafeGet(x).toInt() * 5
+            }
+            // Store BCD representation of VX in memory locations I, I+1, and I+2
+            case 51 => {
+              val vx = v.unsafeGet(x).toInt()
+              ram.setAddr(i, (vx / 100).toByte())
+              ram.setAddr(i + 1, mod((vx / 10), 10).toByte())
+              ram.setAddr(i + 2, mod(vx, 10).toByte())
+            }
+            // Store registers V0 through VX in memory starting at location I
+            case 85 => {
+              var index = 0
+              while (index <= x) {
+                ram.setAddr(i + index, v.unsafeGet(index))
+                index = index + 1
+              }
+              i = i + x + 1
+            }
+            // Read registers V0 through VX from memory starting at location I
+            case 101 => {
+              var index = 0
+              while (index <= x) {
+                v.set(index, ram.getAddr(i + index))
+                index = index + 1
+              }
+              i = i + x + 1
+            }
+          } else {
+            r.log("Unknown Instruction: " ++ show(inst))
+          }
+          pc = pc + 2
+        }
+      } else {
+        r.log("Unknown Instruction: " ++ show(inst))
+      }
+      last_instruction_run_time = getNow()
+    }
+  }
+}
