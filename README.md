@@ -1,142 +1,55 @@
-# Effekt Template
+# Effekt8: Chip-8 emulator in Effekt
 
-> [!WARNING]
-> This is a work-in-progress, feel free to contribute!
+Aim is to emulate the Chip-8, an interpreted programming language from the 1970s, using the Effekt programming language. The emulator will interpret and execute Chip-8 programs, allowing users to run classic Chip-8 games and applications. This project will leverage Effekt's unique features, such as its effect system, to handle the various operations required by the emulator, including input/output, graphics rendering, and sound.
 
-This template provides a starting point for Effekt projects.
+## Must-have
 
-## Table of contents
+- [x] Basic Chip-8 instruction set implementation
 
-- [First steps](#first-steps)
-- [Useful commands](#useful-commands)
-  - [Effekt commands](#effekt-commands)
-  - [Nix-related commands](#nix-related-commands)
-- [Example projects](#example-projects-using-this-template)
-- [Repository structure](#repository-structure)
-- [CI](#ci)
+- [x] Display rendering using Effekt's graphics capabilities via html canvas
+- [ ] Keyboard input handling
+- [x] Loading and running Chip-8 ROMs
 
----
+## Can-have
 
-## First steps
+- [x] Graphical user interface for loading and managing ROMs
+- [ ] Debugger with step-through execution and breakpoints
+- [ ] Save and load state functionality
+- [ ] Sound support for Chip-8 audio
 
-After using this template, follow these steps to set up your project:
+## Will-not-have
 
-1. Set up your development environment:
+- Networked multiplayer support
+- Support for non-Chip-8 related features or extensions
+- Comprehensive test suite for the emulator
 
-   - Clone this repository locally.
-   - Open it in VSCode.
-   - Install the Effekt VSCode extension offered in the pop-up in the bottom right.
+## Effects and handlers
 
-2. Customize the project:
+I haven't decided on the exact namings of the effects and handlers yet, but here are some ideas for the effects that I am planning to use:
 
-   - Open `flake.nix` and update the project name and other relevant values (follow the comments).
-   - Push your `flake.nix` file after the changes and see if the CI agrees.
+- Input/Output effects for handling keyboard and display
+- State effects for managing the emulator's memory and registers
+- Exception effects for handling invalid instructions or errors
+- Timer effects for implementing Chip-8 timers and delays
 
-3. Set-up auto-update CI in order to get weekly PRs on Tuesday which update the Effekt version in CI:
+## FFI and libraries
 
-   - Go to Settings -> Actions -> General:
-     - and set "Workflow permissions" to "Read and write permissions"
-     - and check "Allow GitHub Actions to create and approve pull requests"
-   - See the [CI](#ci) section for more details
+I am planning on using JS (js-web backend) to do the GUI related tasks, such as rendering the display and handling keyboard input. I will need to write some glue code to interface with the Chip-8 emulator's internal state and the external JS environment.
 
-4. Replace this `README` with your own!
+## Running The Project
 
-## Useful commands
+To run the project, you need to have Effekt installed on your machine. You can find instructions on how to install Effekt [here](https://effekt-lang.org/docs)
 
-### Effekt commands
+After installing Effekt, you can run the project by executing the following command in the project's root directory:
 
-Run the main file:
-
-```sh
-effekt src/main.effekt
+```bash
+effekt main.effekt --backend js-web --includes .
 ```
 
-This (like many other Effekt commands) uses the JavaScript backend by default.
-To use a different backend, add the `--backend <backend>` flag.
+This will then produce a `main.html` and `main.js` file in the `out` directory. You can open the `main.html` file in your browser to run the emulator.
 
-Run the tests:
+Chip-8 ROMs can be found online and loaded into the emulator by clicking the "Load ROM" button in the GUI.
 
-```sh
-effekt src/test.effekt
-```
+## Resources
 
-Open the REPL:
-
-```sh
-effekt
-```
-
-Build the project:
-
-```sh
-effekt --build src/main.effekt
-```
-
-This builds the project into the `out/` directory, creating a runnable file `out/main`.
-
-To see all available options and backends, run:
-
-```sh
-effekt --help
-```
-
-### Nix-related commands
-
-While Nix installation is optional, it provides several benefits:
-
-Update dependencies (also runs automatically in CI):
-
-```sh
-nix flake update
-```
-
-Open a shell with all necessary dependencies:
-
-```sh
-nix develop
-```
-
-Run the main entry point:
-
-```sh
-nix run
-```
-
-Build the project (output in `result/bin/`):
-
-```sh
-nix build
-```
-
-## Example projects using this template
-
-- [`effekt-stm`](https://github.com/jiribenes/effekt-stm)
-- This very project!
-
-## Repository structure
-
-- `.github/workflows/*.yml`: Contains the [CI](#ci) definitions
-- `src/`: Contains the source code
-  - `main.effekt`: Main entry point
-  - `test.effekt`: Entry point for tests
-  - `lib.effekt`: Library code imported by `main` and `test`
-- `flake.nix`: Package configuration in a Nix flake
-- `flake.lock`: Auto-generated lockfile for dependencies
-- `LICENSE`: Project license
-- `README`: This README file
-
-## CI
-
-Two GitHub Actions are set up:
-
-1. `flake-check`:
-
-   - Checks the `flake.nix` file, builds and tests the project
-   - Runs on demand, on `main`, and on PRs
-   - To run custom commands, add a step using:
-     - `nix run -- <ARGS>` to run the main entry point with the given arguments
-     - `nix develop -c '<bash command to run>'` to run commands in the correct environment
-
-2. `update-flake-lock`:
-   - Updates package versions in `flake.nix`
-   - Runs on demand and weekly (Tuesdays at 00:00 UTC)
+- [Cowgod's Chip-8 Technical Reference](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM)
