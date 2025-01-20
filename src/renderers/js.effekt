@@ -44,13 +44,24 @@ val pageContent = """
       <input type="file" id="rom" accept=".ch8" />
       <button id="start" disabled>Start</button>
       <hr />
-      <canvas id="canvas" width="640" height="320"></canvas>
+      <canvas id="canvas" width="640" height="320" style="border: 10px solid black;"></canvas>
       <hr />
       <div>
         <h3>Logs:</h3>
         <pre id="logs"></pre>
       </div>
     </body>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      canvas {
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
   </html>
 """
 
@@ -112,7 +123,7 @@ extern io def get(x: Int, y: Int): Bool = jsWeb """
 extern io def update(f: () => Unit at {io, global}): Unit = jsWeb """
   setInterval(() => {
     $effekt.runToplevel((ks) => ${f}(ks));
-  }, 1000 / 60);
+  }, 1000 / 120);
 """
 
 namespace JSRenderer {
