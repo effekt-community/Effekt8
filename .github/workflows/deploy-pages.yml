@@ -24,12 +24,12 @@ jobs:
               run: npm install -g @effekt-lang/effekt
             - name: Build
               id: build
-              run: effekt src/main.effekt --backend js-web --includes .
+              run: effekt ${{ github.workspace }}/src/main.effekt --backend js-web --includes ${{ github.workspace }}
             - name: Upload Artifact
               id: deployment
               uses: actions/upload-pages-artifact@v3
               with:
-                path: out/
+                path: ${{ github.workspace }}/out/
 
     deploy:
         needs: build
