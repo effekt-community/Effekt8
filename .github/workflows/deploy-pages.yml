@@ -23,11 +23,12 @@ jobs:
                 which java
                 java -version
                 echo "JAVA_HOME=$JAVA_HOME"
-                export PATH="$JAVA_HOME/bin:$PATH"
                 npm install -g @effekt-lang/effekt
             - name: Build
               id: build
-              run: effekt ${{ github.workspace }}/src/main.effekt --backend js-web --includes ${{ github.workspace }}
+              run: |
+                export PATH="$JAVA_HOME/bin:$PATH"
+                effekt ${{ github.workspace }}/src/main.effekt --backend js-web --includes ${{ github.workspace }}
             - name: Upload Artifact
               id: deployment
               uses: actions/upload-pages-artifact@v3
