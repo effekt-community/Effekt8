@@ -43,7 +43,7 @@ To run the project, you need to have Effekt installed on your machine. You can f
 After installing Effekt, you can run the project by executing the following command in the project's root directory:
 
 ```bash
-effekt main.effekt --backend js-web --includes .
+effekt src/main.effekt --backend js-web --includes .
 ```
 
 This will then produce a `main.html` and `main.js` file in the `out` directory. You can open the `main.html` file in your browser to run the emulator.
