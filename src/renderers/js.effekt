@@ -14,6 +14,7 @@ extern io def loadRom(): ByteArray = jsWeb "rom ? rom : new Uint8Array(0)"
 extern io def requestAnimationFrame {callback: () => Unit}: Unit = jsWeb "requestAnimationFrame(() => $effekt.runToplevel((ks) => ${box callback}(ks)))"
 extern jsWeb """
   let rom = undefined;
+  let key = undefined;
   // Global Log Function
   function log(msg) {
     const message = new Date().toLocaleTimeString() + ' - ' + msg + ' \n'
@@ -26,6 +27,12 @@ extern jsWeb """
     document.getElementById('rom').addEventListener('change', async (event) => {
       rom = await event.target.files[0].bytes();
       document.getElementById('start').removeAttribute('disabled');
+    });
+  }
+
+  function keyRegister() {
+    document.addEventListener('keydown', (event) => {
+      window.key = event.key;
     });
   }
 """
@@ -70,7 +77,7 @@ val width = 640
 val height = 320
 val scale = 10
 
-extern io def renderPage(content: String): Unit = jsWeb "document.write(${content}); romCheck();"
+extern io def renderPage(content: String): Unit = jsWeb "document.write(${content}); romCheck(); keyRegister();"
 // Initialize the screen
 def init(run: (ByteArray) => Unit at {io, global}) = {
   renderPage(pageContent)
@@ -126,6 +133,14 @@ extern io def update(f: () => Unit at {io, global}): Unit = jsWeb """
   }, 1000 / 120);
 """
 
+extern io def getKeyPressed(): String = jsWeb """
+  (() => {
+    const key = window.key;
+    window.key = undefined;
+    return key;
+  })();
+"""
+
 namespace JSRenderer {
   // make JS Renderer 
   def makeRenderer: Renderer = new Renderer {
@@ -136,5 +151,9 @@ namespace JSRenderer {
     def log(msg: String) = log(msg)
     def fill(color: String) = fill(color)
     def get(x: Int, y: Int) = get(x, y)
+    def getKeyPressed() = {
+      val key = getKeyPressed()
+      undefinedToOption(key)
+    }
   }
 }

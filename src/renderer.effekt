@@ -16,4 +16,5 @@ interface Renderer {
   def get(x: Int, y: Int): Bool
   def update(f: () => Unit at {io, global}): Unit
   def log(msg: String): Unit
+  def getKeyPressed(): Option[String]
 }

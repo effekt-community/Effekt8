@@ -7,7 +7,7 @@ Aim is to emulate the Chip-8, an interpreted programming language from the 1970s
 - [x] Basic Chip-8 instruction set implementation
 
 - [x] Display rendering using Effekt's graphics capabilities via html canvas
-- [ ] Keyboard input handling
+- [x] Keyboard input handling
 - [x] Loading and running Chip-8 ROMs
 
 ## Can-have

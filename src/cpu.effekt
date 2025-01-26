@@ -21,7 +21,27 @@ extern io def getNow(): Int = jsWeb "Date.now()"
 interface CPU {
   def initCPU(rom: ByteArray): Unit
   def cycleCPU(): Unit
+
 }
+def convertKey(key: String): Int = key match {
+    case "1" => 1
+    case "2" => 2
+    case "3" => 3
+    case "4" => 12
+    case "q" => 4
+    case "w" => 5
+    case "e" => 6
+    case "r" => 13
+    case "a" => 7
+    case "s" => 8
+    case "d" => 9
+    case "f" => 14
+    case "z" => 10
+    case "x" => 0
+    case "c" => 11
+    case "v" => 15
+    case _ => -1
+} 
 
 def makeCPU() {r: Renderer} = {
   // Initialize the RAM
@@ -33,7 +53,6 @@ def makeCPU() {r: Renderer} = {
 
   var delay: Byte in global = 0.toByte() // Delay timer
   var sound: Byte in global = 0.toByte() // Sound timer
-
   var pc: Int in global = 512 // Program counter
   var sp: Byte in global = 0.toByte() // Stack pointer
   // After checking the implementation of queue in Effekt, I realized that it also works as a stack, so I will use it as a stack
@@ -47,16 +66,27 @@ def makeCPU() {r: Renderer} = {
   new CPU {
     def initCPU(rom: ByteArray) = {
       ram.init(rom)
-      r.fill("black")
+      r.clear()
     }
     def cycleCPU() = {
       val currentTime = getNow()
+      var key: Int = -1 // Key pressed
+      if (currentTime - last_key_update_time >= 16) { // 60Hz key updates
+        // Update keys
+        val key_ = r.getKeyPressed().getOrElse { "P" }
+        if (key_ != "P") {
+          last_key_update_time = currentTime
+          key = convertKey(key_)
+          r.log("Key pressed: " ++ show(key))
+        }
+      }
+
       if (currentTime - last_instruction_run_time >= 2) { // ~500Hz
         val h = ram.getAddr(pc)
         val l = ram.getAddr(pc + 1)
         val inst = bitwiseOr(bitwiseShl(h.toInt(), 8), l.toInt())
-        // r.log("PC: " ++ show(pc))
-        // r.log("Instruction: " ++ show(inst))
+        r.log("PC: " ++ show(pc))
+        r.log("Instruction: " ++ show(inst))
 
         // Decode
         val opcode = bitwiseShr(bitwiseAnd(inst, 61440), 12)
@@ -225,16 +255,21 @@ def makeCPU() {r: Renderer} = {
             pc = pc + 2
           }
           case 14 => {
+            r.log("nn: " ++ show(nn))
             nn match {
-              // Skip next instruction if key with the value of VX is pressed
-              case 161 => {
-                // TODO: missing keyboard input
-                ()
-              }
               // Skip next instruction if key with the value of VX is not pressed
+              case 161 => {
+                r.log("Key: " ++ show(key) ++ " VX: " ++ show(v.unsafeGet(x)))
+                if (key != -1 && key != v.unsafeGet(x).toInt()) {
+                  pc = pc + 2
+                }
+              }
+              // Skip next instruction if key with the value of VX is pressed
               case 158 => {
-                // TODO: missing keyboard input
-                ()
+                r.log("Key: " ++ show(key) ++ " VX: " ++ show(v.unsafeGet(x)))
+                if (key != -1 && key == v.unsafeGet(x).toInt()) {
+                  pc = pc + 2
+                }
               }
             } else {
               r.log("Unknown Instruction: " ++ show(inst))
@@ -248,8 +283,9 @@ def makeCPU() {r: Renderer} = {
               }
               // Wait for a key press, store the value of the key in VX
               case 10 => {
-                // TODO: missing keyboard input
-                ()
+                if (key != -1) {
+                  v.set(x, key.toByte())
+                }
               }
               // SET delay timer = VX
               case 21 => {
