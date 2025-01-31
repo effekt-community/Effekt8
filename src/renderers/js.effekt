@@ -14,13 +14,13 @@ extern io def loadRom(): ByteArray = jsWeb "rom ? rom : new Uint8Array(0)"
 extern io def requestAnimationFrame {callback: () => Unit}: Unit = jsWeb "requestAnimationFrame(() => $effekt.runToplevel((ks) => ${box callback}(ks)))"
 extern jsWeb """
   let rom = undefined;
-  let key = undefined;
+  let keyStates = new Map(); // Change to track multiple keys
+  let lastKeyUpdate = performance.now();
+  
   // Global Log Function
   function log(msg) {
     const message = new Date().toLocaleTimeString() + ' - ' + msg + ' \n'
     console.log(message);
-    // Logging with timestamp
-    // document.getElementById('logs').innerText += message;
   }
 
   function romCheck() {
@@ -31,8 +31,24 @@ extern jsWeb """
   }
 
   function keyRegister() {
+    // Track key state changes
     document.addEventListener('keydown', (event) => {
-      window.key = event.key;
+      event.preventDefault();
+      const key = event.key.toLowerCase();
+      keyStates.set(key, true);
+      lastKeyUpdate = performance.now();
+    });
+
+    document.addEventListener('keyup', (event) => {
+      event.preventDefault();
+      const key = event.key.toLowerCase();
+      keyStates.delete(key);
+      lastKeyUpdate = performance.now();
+    });
+
+    // Prevent key repeats
+    document.addEventListener('keypress', (event) => {
+      event.preventDefault();
     });
   }
 """
@@ -100,11 +116,11 @@ def eventHandler {onClick: (ByteArray) => Unit}: Unit = {
 def clear(): Unit = fill("black")
 
 // Draw at (x, y) on the screen
-extern io def draw(x: Int, y: Int): Unit = jsWeb """
+extern io def draw(x: Int, y: Int, color: String): Unit = jsWeb """
   (() => {
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'white';
+  ctx.fillStyle = ${color};
   ctx.fillRect(10 * ${x}, 10 * ${y}, 10, 10);
   })();
 """
@@ -130,14 +146,16 @@ extern io def get(x: Int, y: Int): Bool = jsWeb """
 extern io def update(f: () => Unit at {io, global}): Unit = jsWeb """
   setInterval(() => {
     $effekt.runToplevel((ks) => ${f}(ks));
-  }, 1000 / 120);
+  }, 1000 / 240);
 """
 
 extern io def getKeyPressed(): String = jsWeb """
   (() => {
-    const key = window.key;
-    window.key = undefined;
-    return key;
+    // Return first pressed key or "P" if no keys pressed
+    for (const [key, pressed] of keyStates.entries()) {
+      if (pressed) return key;
+    }
+    return "P";
   })();
 """
 
@@ -146,7 +164,7 @@ namespace JSRenderer {
   def makeRenderer: Renderer = new Renderer {
     def init(run) = init(run)
     def clear() = clear()
-    def draw(x: Int, y: Int) = draw(x, y)
+    def draw(x: Int, y: Int, color: String) = draw(x, y, color)
     def update(f: () => Unit at {io, global}) = update(f)
     def log(msg: String) = log(msg)
     def fill(color: String) = fill(color)

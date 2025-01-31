@@ -11,7 +11,7 @@ import bytearray
 interface Renderer {
   def init(run: (ByteArray) => Unit at {io, global}): Unit
   def clear(): Unit
-  def draw(x: Int, y: Int): Unit
+  def draw(x: Int, y: Int, color: String): Unit
   def fill(color: String): Unit
   def get(x: Int, y: Int): Bool
   def update(f: () => Unit at {io, global}): Unit
