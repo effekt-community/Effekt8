@@ -1,10 +1,71 @@
 module src/test
 
 import test
-import src/lib
+import src/cpu
+import src/renderer
+import bytearray
+import array
 
-def main() = mainSuite("lib") {
-  test("Hello world") {
-    assertEqual("Hello, world!", "Hello, world!")
+// Mock renderer for testing
+def makeMockRenderer() = {
+  var screen: Array[Bool] = allocate(32 *64)
+  var lastKey: String = "P"
+  var beeping: Bool = false
+  new Renderer {
+  def init(run: (ByteArray) => Unit at {io, global}) = ()
+  def clear() = screen = allocate(32 *64)
+  def draw(x: Int, y: Int, color: String) = {
+    screen.get(y).set(x, color == "white")
   }
+  def fill(color: String) = {
+    screen = allocate(32 *64, color == "white")
+  }
+  def get(x: Int, y: Int): Bool = screen(y)(x)
+  def update(f: () => Unit at {io, global}) = ()
+  def log(msg: String) = ()
+  def getKeyPressed() = Some(lastKey)
+  def beep() = { beeping = true }
+  def stopBeep() = { beeping = false }
+  }
+}
+def main() = mainSuite("CHIP-8") {
+  // CPU Tests
+  
+    test("Key conversion") {
+      assertEqual(convertKey("1"), 1)
+      assertEqual(convertKey("2"), 2)
+      assertEqual(convertKey("v"), 15)
+      assertEqual(convertKey("invalid"), -1)
+  
+    test("CPU initialization") {
+      val renderer = makeMockRenderer()
+      val cpu = makeCPU() { renderer }
+      val testRom = allocate(10)
+      cpu.initCPU(testRom)
+      // Add assertions here for initial state
+    }
+
+    test("Basic instructions") {
+      val renderer = makeMockRenderer()
+      val cpu = makeCPU() { renderer }
+      val testRom = allocate(4)
+      // Set up a simple instruction in ROM
+      testRom.unsafeSet(0, 96) // 0x60
+      testRom.unsafeSet(1, 66) // 0x42
+      cpu.initCPU(testRom)
+      cpu.cycleCPU()
+      
+    }
+  }
+
+  // Renderer Tests
+  
+    test("Screen operations") {
+      val renderer = makeMockRenderer()
+      renderer.clear()
+      renderer.draw(0, 0, "white")
+      assert(renderer.get(0, 0))
+      renderer.draw(0, 0, "black")
+      assert(renderer.get(0, 0), false)
+    }
 }

@@ -49,6 +49,15 @@ effekt src/main.effekt --backend js-web --includes .
 This will then produce a `main.html` and `main.js` file in the `out` directory. You can open the `main.html` file in your browser to run the emulator.
 
 Chip-8 ROMs can be found online and loaded into the emulator by clicking the "Load ROM" button in the GUI.
+If you want to enable audio, you can do so by clicking the "Enable Audio" button in the GUI.
+
+## Keyboard Layout
+
+| 1 (1) | 2 (2) | 3 (3) | 4 (C) |
+| ----- | ----- | ----- | ----- |
+| Q (4) | W (5) | E (6) | R (D) |
+| A (7) | S (8) | D (9) | F (E) |
+| Z (A) | X (0) | C (B) | V (F) |
 
 ## Resources
 

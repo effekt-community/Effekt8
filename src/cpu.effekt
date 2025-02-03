@@ -17,7 +17,16 @@ CPU Cycle and Effects:
 6. Wait for next cycle
 */
 
-extern io def getNow(): Int = jsWeb "Date.now()"
+extern io def getNow(): Int = 
+  js "Date.now()"
+  chez "(current-milliseconds)"
+  llvm """
+    %time = call i64 @time(ptr null)
+    %ms = mul i64 %time, 1000
+    ret i64 %ms
+  """
+  vm "effekt::getNow()"
+
 interface CPU {
   def initCPU(rom: ByteArray): Unit
   def cycleCPU(): Unit
@@ -75,7 +84,6 @@ def makeCPU() {r: Renderer} = {
         val key_ = r.getKeyPressed().getOrElse { "P" }
         if (key_ != "P") {
           key = convertKey(key_)
-          r.log("Key pressed: " ++ show(key))
         }
         last_key_update_time = currentTime
       }
@@ -84,8 +92,6 @@ def makeCPU() {r: Renderer} = {
         val h = ram.getAddr(pc)
         val l = ram.getAddr(pc + 1)
         val inst = bitwiseOr(bitwiseShl(h.toInt(), 8), l.toInt())
-        r.log("PC: " ++ show(pc))
-        r.log("Instruction: " ++ show(inst))
 
         // Decode
         val opcode = bitwiseShr(bitwiseAnd(inst, 61440), 12)
@@ -184,11 +190,9 @@ def makeCPU() {r: Renderer} = {
                 val vx = v.unsafeGet(x).toInt()
                 val vy = v.unsafeGet(y).toInt()
                 val sub = vx - vy
-                r.log(show(vx) ++ "(" ++ show(x) ++ ") - " ++ show(vy) ++ "(" ++ show(y) ++ ") = " ++ show(sub) ++ "with borrow of " ++ show(if (vx > vy) 1 else 0))
+
                 v.unsafeSet(x, sub.toByte())
                 v.unsafeSet(15, (if (vx > vy) 1 else 0).toByte())
-                r.log("vx is now " ++ show(v.unsafeGet(x)))
-                r.log("vF is now " ++ show(v.unsafeGet(15)))
               }
               // Set VX = VX SHR 1 and VF = LSB of VX
               case 6 => {
@@ -203,11 +207,9 @@ def makeCPU() {r: Renderer} = {
                 val vx = v.unsafeGet(x).toInt()
                 val vy = v.unsafeGet(y).toInt()
                 val sub = vy - vx
-                r.log(show(vy) ++ "(" ++ show(y) ++ ") - " ++ show(vx) ++ "(" ++ show(x) ++ ") = " ++ show(sub) ++ "with borrow of " ++ show(if (vy > vx) 1 else 0))
+                
                 v.unsafeSet(x, sub.toByte())
                 v.unsafeSet(15, (if (vy > vx) 1 else 0).toByte())
-                r.log("vx is now " ++ show(v.unsafeGet(x)))
-                r.log("vF is now " ++ show(v.unsafeGet(15)))
               }
               // Set VX = VX SHL 1 and VF = MSB of VX
               case 14 => {

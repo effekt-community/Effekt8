@@ -1,4 +1,4 @@
-module main // must be named same as the file!
+module main
 
 import src/cpu
 import src/renderers/js

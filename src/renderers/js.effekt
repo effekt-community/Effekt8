@@ -23,6 +23,7 @@ extern jsWeb """
   function log(msg) {
     const message = new Date().toLocaleTimeString() + ' - ' + msg + ' \n'
     console.log(message);
+    document.getElementById('logs').textContent += message;
   }
 
   function romCheck() {
