@@ -13,6 +13,8 @@ extern io def log(msg: String): Unit = jsWeb "log(${msg});"
 extern io def loadRom(): ByteArray = jsWeb "rom ? rom : new Uint8Array(0)"
 extern io def requestAnimationFrame {callback: () => Unit}: Unit = jsWeb "requestAnimationFrame(() => $effekt.runToplevel((ks) => ${box callback}(ks)))"
 extern jsWeb """
+  let audioContext = null;
+  let oscillator = null;
   let rom = undefined;
   let keyStates = new Map(); // Change to track multiple keys
   let lastKeyUpdate = performance.now();
@@ -60,31 +62,246 @@ val pageContent = """
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>Effekt8</title>
+      <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     </head>
     <body>
-      <h1>Effekt8: Chip8 Simulator written in Effekt Language</h1>
-      <label for="rom">Select a Chip8 ROM:</label>
-      <input type="file" id="rom" accept=".ch8" />
-      <button id="start" disabled>Start</button>
-      <hr />
-      <canvas id="canvas" width="640" height="320" style="border: 10px solid black;"></canvas>
-      <hr />
-      <div>
-        <h3>Logs:</h3>
-        <pre id="logs"></pre>
+      <div class="container">
+        <div class="header">
+          <h1>EFFEKT-8</h1>
+          <p class="subtitle">CHIP-8 Emulator in Effekt</p>
+        </div>
+        
+        <div class="control-panel">
+          <div class="file-input">
+            <label for="rom">SELECT ROM FILE:</label>
+            <input type="file" id="rom" accept=".ch8" />
+          </div>
+          <button id="start" disabled>START EMULATION</button>
+          <button id="audio" onclick="initAudio()">ENABLE AUDIO</button>
+        </div>
+
+        <div class="display-container">
+          <canvas id="canvas" width="640" height="320"></canvas>
+        </div>
+
+        <div class="info-panel">
+          <div class="controls-guide">
+            <h3>CONTROLS</h3>
+            <div class="keyboard-layout">
+              <div class="key-row">
+                <div class="key">1</div>
+                <div class="key">2</div>
+                <div class="key">3</div>
+                <div class="key">4</div>
+              </div>
+              <div class="key-row">
+                <div class="key">Q</div>
+                <div class="key">W</div>
+                <div class="key">E</div>
+                <div class="key">R</div>
+              </div>
+              <div class="key-row">
+                <div class="key">A</div>
+                <div class="key">S</div>
+                <div class="key">D</div>
+                <div class="key">F</div>
+              </div>
+              <div class="key-row">
+                <div class="key">Z</div>
+                <div class="key">X</div>
+                <div class="key">C</div>
+                <div class="key">V</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="logs-panel">
+            <h3>SYSTEM LOGS</h3>
+            <pre id="logs"></pre>
+          </div>
+        </div>
       </div>
+      <style>
+        :root {
+          --neon-blue: #00f3ff;
+          --dark-bg: #0a0a1f;
+          --panel-bg: #1a1a2f;
+          --text-glow: 0 0 10px var(--neon-blue);
+        }
+
+        body {
+          font-family: 'Orbitron', sans-serif;
+          margin: 0;
+          padding: 20px;
+          background: var(--dark-bg);
+          color: white;
+          min-height: 100vh;
+        }
+
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+
+        .header h1 {
+          color: var(--neon-blue);
+          font-size: 3em;
+          margin: 0;
+          text-shadow: var(--text-glow);
+        }
+
+        .subtitle {
+          color: #ffffff80;
+          margin: 5px 0;
+        }
+
+        .control-panel {
+          display: flex;
+          gap: 20px;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 20px;
+          background: var(--panel-bg);
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+        }
+
+        .file-input {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        input[type="file"] {
+          background: var(--panel-bg);
+          padding: 10px;
+          border-radius: 5px;
+          border: 1px solid var(--neon-blue);
+          color: white;
+        }
+
+        button {
+          background: var(--panel-bg);
+          color: var(--neon-blue);
+          border: 2px solid var(--neon-blue);
+          padding: 10px 20px;
+          font-family: 'Orbitron', sans-serif;
+          font-size: 1em;
+          cursor: pointer;
+          border-radius: 5px;
+          transition: all 0.3s ease;
+        }
+
+        button:hover:not([disabled]) {
+          background: var(--neon-blue);
+          color: var(--dark-bg);
+          box-shadow: var(--text-glow);
+        }
+
+        button[disabled] {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .display-container {
+          display: flex;
+          justify-content: center;
+          margin: 20px 0;
+        }
+
+        canvas {
+          border: 3px solid var(--neon-blue);
+          border-radius: 10px;
+          box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+        }
+
+        .info-panel {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: 20px;
+          margin-top: 20px;
+        }
+
+        .controls-guide, .logs-panel {
+          background: var(--panel-bg);
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+        }
+
+        .keyboard-layout {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .key-row {
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+        }
+
+        .key {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--neon-blue);
+          border-radius: 5px;
+          font-size: 0.9em;
+        }
+
+        .logs-panel {
+          height: 300px;
+          overflow-y: auto;
+        }
+
+        #logs {
+          font-family: monospace;
+          font-size: 0.9em;
+          color: #fff;
+          margin: 0;
+          white-space: pre-wrap;
+        }
+
+        h3 {
+          color: var(--neon-blue);
+          margin-top: 0;
+          text-shadow: var(--text-glow);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: var(--dark-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: var(--neon-blue);
+          border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+          .info-panel {
+            grid-template-columns: 1fr;
+          }
+          
+          .control-panel {
+            flex-direction: column;
+          }
+        }
+      </style>
     </body>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-      }
-      canvas {
-        display: block;
-        margin: 0 auto;
-      }
-    </style>
   </html>
 """
 
@@ -159,6 +376,30 @@ extern io def getKeyPressed(): String = jsWeb """
   })();
 """
 
+extern io def stopBeep(): Unit = jsWeb """
+  (() => {
+    if (oscillator) {
+      oscillator.stop();
+      oscillator.disconnect();
+      oscillator = null;
+    }
+  })();
+"""
+
+extern io def beep(): Unit = jsWeb """
+  (() => {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (!oscillator) {
+      oscillator = audioContext.createOscillator();
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // 440Hz = A4 note
+      oscillator.connect(audioContext.destination);
+      oscillator.start();
+    }
+  })();
+"""
 namespace JSRenderer {
   // make JS Renderer 
   def makeRenderer: Renderer = new Renderer {
@@ -173,5 +414,7 @@ namespace JSRenderer {
       val key = getKeyPressed()
       undefinedToOption(key)
     }
+    def beep() = beep()
+    def stopBeep() = stopBeep()
   }
 }

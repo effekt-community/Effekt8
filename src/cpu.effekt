@@ -389,6 +389,9 @@ def makeCPU() {r: Renderer} = {
           }
           if (sound.toInt() > 0) {
             sound = (sound.toInt() - 1).toByte()
+            r.beep()
+          } else {
+            r.stopBeep()
           }
           
           last_timer_update = currentTime

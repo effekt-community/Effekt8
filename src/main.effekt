@@ -7,7 +7,6 @@ import bytearray
 
 def main(): Unit = {
   // Using the JS backend
-  region global {
     def renderer: Renderer = JSRenderer::makeRenderer
     def cpu_ = makeCPU() {renderer}
     def plsRender(rom: ByteArray): Unit = {
@@ -16,6 +15,5 @@ def main(): Unit = {
     }
     renderer.init(plsRender)
     ()
-  }
   ()
 }

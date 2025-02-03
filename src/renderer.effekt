@@ -7,6 +7,7 @@ Every backend must implement this interface.
 */
 
 import bytearray
+// region of runtime
 
 interface Renderer {
   def init(run: (ByteArray) => Unit at {io, global}): Unit
@@ -17,4 +18,6 @@ interface Renderer {
   def update(f: () => Unit at {io, global}): Unit
   def log(msg: String): Unit
   def getKeyPressed(): Option[String]
+  def beep(): Unit 
+  def stopBeep(): Unit
 }

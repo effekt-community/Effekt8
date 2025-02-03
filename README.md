@@ -15,7 +15,7 @@ Aim is to emulate the Chip-8, an interpreted programming language from the 1970s
 - [x] Graphical user interface for loading and managing ROMs
 - [ ] Debugger with step-through execution and breakpoints
 - [ ] Save and load state functionality
-- [ ] Sound support for Chip-8 audio
+- [x] Sound support for Chip-8 audio
 
 ## Will-not-have
 
