@@ -19,9 +19,9 @@ Aim is to emulate the Chip-8, an interpreted programming language from the 1970s
 
 ## Will-not-have
 
-- Networked multiplayer support
-- Support for non-Chip-8 related features or extensions
-- Comprehensive test suite for the emulator
+- [ ] Networked multiplayer support
+- [ ] Support for non-Chip-8 related features or extensions
+- [x] Comprehensive test suite for the emulator
 
 ## Effects and handlers
 
