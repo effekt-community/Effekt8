@@ -62,3 +62,4 @@ If you want to enable audio, you can do so by clicking the "Enable Audio" button
 ## Resources
 
 - [Cowgod's Chip-8 Technical Reference](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM)
+- [ROM Library](https://johnearnest.github.io/chip8Archive/?sort=platform#chip8)
