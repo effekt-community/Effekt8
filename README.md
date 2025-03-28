@@ -1,3 +1,9 @@
+> [!NOTE]
+> This is a community-maintained fork of a MIT-licensed student project in the *Effective Programming with Effects* course in winter semester 2024/2025.
+> Be warned that this is not an officially endorsed project, the code in this repository may be not idiomatic Effekt.
+> 
+> The original repository is https://github.com/CanCodes/Effekt8
+
 # Effekt8: Chip-8 emulator in Effekt
 
 Aim is to emulate the Chip-8, an interpreted programming language from the 1970s, using the Effekt programming language. The emulator will interpret and execute Chip-8 programs, allowing users to run classic Chip-8 games and applications. This project will leverage Effekt's unique features, such as its effect system, to handle the various operations required by the emulator, including input/output, graphics rendering, and sound.
