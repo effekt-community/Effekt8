@@ -8,12 +8,12 @@ interface Ram {
   def init(rom: ByteArray): Unit  
 }
 
-def get(ram: ByteArray, address: Int): Byte = ram.unsafeGet(address)
-def set(ram: ByteArray, address: Int, byte: Byte): Unit = ram.unsafeSet(address, byte)
-def set(ram: ByteArray, address: Int, value: Int): Unit = ram.unsafeSet(address, value.toByte)
+def get(ram: Ref[ByteArray], address: Int): Byte = ram.get.unsafeGet(address)
+def set(ram: Ref[ByteArray], address: Int, byte: Byte): Unit = ram.get.unsafeSet(address, byte)
+def set(ram: Ref[ByteArray], address: Int, value: Int): Unit = ram.get.unsafeSet(address, value.toByte)
 
 // Load the predefined fontset. There is no better way to do this, since they are hardcoded values.
-def loadFont(ram: ByteArray): Unit = {
+def loadFont(ram: Ref[ByteArray]): Unit = {
   // Since there is no way to represent hex literals in Effekt, we have to use decimal literals and convert them to bytes.
   val fontSet: List[Byte] = [
     240.toByte, 144.toByte, 144.toByte, 144.toByte, 240.toByte, // 0
@@ -39,12 +39,12 @@ def loadFont(ram: ByteArray): Unit = {
 }
 
 // Load the ROM into memory starting at 0x200 (512)
-def loadRom(ram: ByteArray, rom: ByteArray): Unit = rom.foreachIndex { (i, byte) =>
+def loadRom(ram: Ref[ByteArray], rom: ByteArray): Unit = rom.foreachIndex { (i, byte) =>
   set(ram, 512 + i, byte)
 }
 
 def makeRam() = {
-  var ram: ByteArray in global = allocate(4096) // 4KB of memory
+  val ram: Ref[ByteArray] = ref(allocate(4096)) // 4KB of memory
   new Ram {
     def getAddr(address: Int) = get(ram, address)
     def setAddr(address: Int, byte: Byte) = set(ram, address, byte)
