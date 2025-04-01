@@ -18,7 +18,7 @@ extern jsWeb """
   let rom = undefined;
   let keyStates = new Map(); // Change to track multiple keys
   let lastKeyUpdate = performance.now();
-  
+
   // Global Log Function
   function log(msg) {
     const message = new Date().toLocaleTimeString() + ' - ' + msg + ' \n'
@@ -71,7 +71,7 @@ val pageContent = """
           <h1>EFFEKT-8</h1>
           <p class="subtitle">CHIP-8 Emulator in Effekt</p>
         </div>
-        
+
         <div class="control-panel">
           <div class="file-input">
             <label for="rom">SELECT ROM FILE:</label>
@@ -296,7 +296,7 @@ val pageContent = """
           .info-panel {
             grid-template-columns: 1fr;
           }
-          
+
           .control-panel {
             flex-direction: column;
           }
@@ -313,13 +313,13 @@ val scale = 10
 
 extern io def renderPage(content: String): Unit = jsWeb "document.write(${content}); romCheck(); keyRegister();"
 // Initialize the screen
-def init(run: (ByteArray) => Unit at {io, global}) = {
+def init {run: (ByteArray) => Unit} = {
   renderPage(pageContent)
   val startButton = getElementById("start")
   addListener("click", startButton) {eventHandler {run}}
 }
 
-def eventHandler {onClick: (ByteArray) => Unit}: Unit = {
+def eventHandler {onClick: (ByteArray) => Unit }: Unit = {
   log("Start button clicked! Loading ROM...")
   val rom: ByteArray = loadRom()
   if (rom.size() != 0) {
@@ -361,9 +361,9 @@ extern io def get(x: Int, y: Int): Bool = jsWeb """
   })();
 """
 
-extern io def update(f: () => Unit at {io, global}): Unit = jsWeb """
+extern io def update {f: () => Unit}: Unit = jsWeb """
   setInterval(() => {
-    $effekt.runToplevel((ks) => ${f}(ks));
+    $effekt.runToplevel((ks) => ${box f}(ks));
   }, 1000 / 240);
 """
 
@@ -401,21 +401,17 @@ extern io def beep(): Unit = jsWeb """
     }
   })();
 """
-namespace JSRenderer {
-  // make JS Renderer 
-  def makeRenderer: Renderer = new Renderer {
-    def init(run) = init(run)
-    def clear() = clear()
-    def draw(x: Int, y: Int, color: String) = draw(x, y, color)
-    def update(f: () => Unit at {io, global}) = update(f)
-    def log(msg: String) = log(msg)
-    def fill(color: String) = fill(color)
-    def get(x: Int, y: Int) = get(x, y)
-    def getKeyPressed() = {
-      val key = getKeyPressed()
-      undefinedToOption(key)
-    }
-    def beep() = beep()
-    def stopBeep() = stopBeep()
+
+def jsRenderer { prog: => Unit / Renderer }: Unit =
+  try prog() with Renderer {
+    def init() = resume { {run} => init {run} }
+    def clear() = { clear(); resume(()) }
+    def draw(x: Int, y: Int, color: String) = { draw(x, y, color); resume(()) }
+    def update() = resume { {f} => update {f} }
+    def log(msg: String) = { log(msg); resume(()) }
+    def fill(color: String) = { fill(color); resume(()) }
+    def get(x: Int, y: Int) = resume(get(x, y))
+    def getKeyPressed() = resume(getKeyPressed().undefinedToOption)
+    def beep() = { beep(); resume(()) }
+    def stopBeep() = { stopBeep(); resume(()) }
   }
-}
