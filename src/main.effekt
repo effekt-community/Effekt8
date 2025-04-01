@@ -7,13 +7,11 @@ import bytearray
 
 def main(): Unit = {
   // Using the JS backend
-    def renderer: Renderer = JSRenderer::makeRenderer
-    def cpu_ = makeCPU() {renderer}
-    def plsRender(rom: ByteArray): Unit = {
-      cpu_.initCPU(rom)
-      renderer.update(box {() => cpu_.cycleCPU()})
-    }
-    renderer.init(plsRender)
-    ()
-  ()
+  with jsRenderer;
+  with def cpu_ = cpu;
+
+  do init { rom =>
+    do initCPU(rom)
+    do update { do cycleCPU() }
+  }
 }

@@ -9,15 +9,20 @@ Every backend must implement this interface.
 import bytearray
 // region of runtime
 
+interface CPU {
+  def initCPU(rom: ByteArray): Unit
+  def cycleCPU(): Unit
+}
+
 interface Renderer {
-  def init(run: (ByteArray) => Unit at {io, global}): Unit
+  def init { run: ByteArray => Unit }: Unit
   def clear(): Unit
   def draw(x: Int, y: Int, color: String): Unit
   def fill(color: String): Unit
   def get(x: Int, y: Int): Bool
-  def update(f: () => Unit at {io, global}): Unit
+  def update { f: => Unit }: Unit
   def log(msg: String): Unit
   def getKeyPressed(): Option[String]
-  def beep(): Unit 
+  def beep(): Unit
   def stopBeep(): Unit
 }
