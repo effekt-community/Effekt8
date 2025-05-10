@@ -17,7 +17,7 @@ CPU Cycle and Effects:
 6. Wait for next cycle
 */
 
-extern io def getNow(): Int = 
+extern io def getNow(): Int =
   js "Date.now()"
   chez "(current-milliseconds)"
   llvm """
@@ -27,11 +27,7 @@ extern io def getNow(): Int =
   """
   vm "effekt::getNow()"
 
-interface CPU {
-  def initCPU(rom: ByteArray): Unit
-  def cycleCPU(): Unit
 
-}
 def convertKey(key: String): Int = key match {
     case "1" => 1
     case "2" => 2
@@ -50,12 +46,11 @@ def convertKey(key: String): Int = key match {
     case "c" => 11
     case "v" => 15
     case _ => -1
-} 
+}
 
-def makeCPU() {r: Renderer} = {
-  // Initialize the RAM
-  val ram = makeRam()
-  
+def cpu { prog: {CPU} => Unit / CPU }: Unit / Renderer = {
+  with freshRam;
+
   // Initialize the CPU registers
   val v: Ref[ByteArray] = ref(allocate(16)) // 16 8-bit registers
   val i = ref(0) // 16-bit register treat as 12-bit !!!
@@ -72,16 +67,17 @@ def makeCPU() {r: Renderer} = {
   val last_display_update_time = ref(getNow())
   val last_timer_update = ref(getNow())
 
-  new CPU {
+  try prog {cpu} with cpu: CPU {
     def initCPU(rom: ByteArray) = {
-      ram.init(rom)
-      r.clear()
+      do init(rom)
+      do clear()
+      resume(())
     }
     def cycleCPU() = {
       val currentTime = getNow()
       var key: Int = -1 // Key pressed
-      if (currentTime - last_key_update_time.get >= 1) { 
-        val key_ = r.getKeyPressed().getOrElse { "P" }
+      if (currentTime - last_key_update_time.get >= 1) {
+        val key_ = do getKeyPressed().getOrElse { "P" }
         if (key_ != "P") {
           key = convertKey(key_)
         }
@@ -89,8 +85,8 @@ def makeCPU() {r: Renderer} = {
       }
 
       if (currentTime - last_instruction_run_time.get >= 2) { // ~500Hz
-        val h = ram.getAddr(pc.get)
-        val l = ram.getAddr(pc.get + 1)
+        val h = do getAddr(pc.get)
+        val l = do getAddr(pc.get + 1)
         val inst = bitwiseOr(bitwiseShl(h.toInt(), 8), l.toInt())
 
         // Decode
@@ -107,7 +103,7 @@ def makeCPU() {r: Renderer} = {
             nn match {
               // Clear the screen
               case 224 => {
-                r.clear()
+                do clear()
                 pc.set(pc.get + 2)
               }
               // Return from a subroutine
@@ -183,7 +179,7 @@ def makeCPU() {r: Renderer} = {
                 val sum = v.get.unsafeGet(x).toInt() + v.get.unsafeGet(y).toInt()
                 v.get.unsafeSet(x, sum.toByte())
                 v.get.unsafeSet(15, (if (sum > 255) 1 else 0).toByte())
-                
+
               }
               // Set VX = VX - VY, set VF = NOT borrow
               case 5 => {
@@ -207,7 +203,7 @@ def makeCPU() {r: Renderer} = {
                 val vx = v.get.unsafeGet(x).toInt()
                 val vy = v.get.unsafeGet(y).toInt()
                 val sub = vy - vx
-                
+
                 v.get.unsafeSet(x, sub.toByte())
                 v.get.unsafeSet(15, (if (vy > vx) 1 else 0).toByte())
               }
@@ -221,7 +217,7 @@ def makeCPU() {r: Renderer} = {
                 v.get.unsafeSet(15, vf.toByte())
               }
             } else {
-              r.log("Unknown Instruction: " ++ show(inst))
+              do log("Unknown Instruction: " ++ show(inst))
             }
             pc.set(pc.get + 2)
           }
@@ -254,37 +250,37 @@ def makeCPU() {r: Renderer} = {
             val vy = v.get.unsafeGet(y).toInt()
             var collision = false
             var yline = 0
-            
+
             while (yline < n) {
-              val pixel = ram.getAddr(i.get + yline)
+              val pixel = do getAddr(i.get + yline)
               var xline = 0
-              
+
               while (xline < 8) {
                 // Get if the current sprite pixel is set (1)
                 val spritePixel = bitwiseAnd(bitwiseShr(pixel.toInt(), 7 - xline), 1) == 1
-                
+
                 if (spritePixel) {
                   val x = mod(vx + xline, 64)
                   val y = mod(vy + yline, 32)
-                  
+
                   // Get current screen pixel
-                  val screenPixel = r.get(x, y)
-                  
+                  val screenPixel = do get(x, y)
+
                   // XOR operation
                   if (screenPixel == spritePixel) {
                     // If both pixels are on, turn it off and set collision
-                    r.draw(x, y, "black")
+                    do draw(x, y, "black")
                     collision = true
                   } else if (screenPixel != spritePixel) {
                     // If screen pixel is off and sprite pixel is on, turn it on
-                    r.draw(x, y, "white") 
+                    do draw(x, y, "white")
                   }
                 }
                 xline = xline + 1
               }
               yline = yline + 1
             }
-            
+
             v.get.unsafeSet(15, (if (collision) 1 else 0).toByte())
             pc.set(pc.get + 2)
           }
@@ -309,7 +305,7 @@ def makeCPU() {r: Renderer} = {
                 }
               }
             } else {
-              r.log("Unknown Instruction: " ++ show(inst))
+              do log("Unknown Instruction: " ++ show(inst))
             }
           }
           case 15 => {
@@ -349,16 +345,16 @@ def makeCPU() {r: Renderer} = {
               // Store BCD representation of VX in memory locations I, I+1, and I+2
               case 51 => {
                 val vx = v.get.unsafeGet(x).toInt()
-                ram.setAddr(i.get, (vx / 100).toByte())
-                ram.setAddr(i.get + 1, mod((vx / 10), 10).toByte())
-                ram.setAddr(i.get + 2, mod(vx, 10).toByte())
+                do setAddr(i.get, (vx / 100).toByte())
+                do setAddr(i.get + 1, mod((vx / 10), 10).toByte())
+                do setAddr(i.get + 2, mod(vx, 10).toByte())
                 pc.set(pc.get + 2)
               }
               // Store registers V0 through VX in memory starting at location I
               case 85 => {
                 var index = 0
                 while (index <= x) {
-                  ram.setAddr(i.get + index, v.get.unsafeGet(index))
+                  do setAddr(i.get + index, v.get.unsafeGet(index))
                   index = index + 1
                 }
                 // i = i + x + 1
@@ -368,18 +364,18 @@ def makeCPU() {r: Renderer} = {
               case 101 => {
                 var index = 0
                 while (index <= x) {
-                  v.get.unsafeSet(index, ram.getAddr(i.get + index))
+                  v.get.unsafeSet(index, do getAddr(i.get + index))
                   index = index + 1
                 }
                 // i = i + x + 1
                 pc.set(pc.get + 2)
               }
             } else {
-              r.log("Unknown Instruction: " ++ show(inst))
+              do log("Unknown Instruction: " ++ show(inst))
             }
           }
         } else {
-          r.log("Unknown Instruction: " ++ show(inst))
+          do log("Unknown Instruction: " ++ show(inst))
         }
         last_instruction_run_time.set(getNow())
 
@@ -391,14 +387,15 @@ def makeCPU() {r: Renderer} = {
           }
           if (sound.get.toInt() > 0) {
             sound.set((sound.get.toInt() - 1).toByte())
-            r.beep()
+            do beep()
           } else {
-            r.stopBeep()
+            do stopBeep()
           }
-          
+
           last_timer_update.set(currentTime)
         }
       }
+      resume(())
     }
   }
 }
