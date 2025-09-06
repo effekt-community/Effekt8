@@ -5,7 +5,7 @@ import bytearray
 interface Ram {
   def getAddr(address: Int): Byte
   def setAddr(address: Int, byte: Byte): Unit
-  def init(rom: ByteArray): Unit  
+  def init(rom: ByteArray): Unit
 }
 
 def get(ram: Ref[ByteArray], address: Int): Byte = ram.get.unsafeGet(address)
@@ -43,14 +43,16 @@ def loadRom(ram: Ref[ByteArray], rom: ByteArray): Unit = rom.foreachIndex { (i, 
   set(ram, 512 + i, byte)
 }
 
-def makeRam() = {
+def freshRam { prog: => Unit / Ram }: Unit = {
   val ram: Ref[ByteArray] = ref(allocate(4096)) // 4KB of memory
-  new Ram {
-    def getAddr(address: Int) = get(ram, address)
-    def setAddr(address: Int, byte: Byte) = set(ram, address, byte)
+
+  try prog() with Ram {
+    def getAddr(address: Int) = resume(get(ram, address))
+    def setAddr(address: Int, byte: Byte) = { set(ram, address, byte); resume(()) }
     def init(rom: ByteArray) = {
       loadFont(ram)
       loadRom(ram, rom)
+      resume(())
     }
   }
 }
