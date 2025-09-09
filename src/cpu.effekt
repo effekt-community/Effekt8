@@ -17,7 +17,7 @@ CPU Cycle and Effects:
 6. Wait for next cycle
 */
 
-extern io def getNow(): Int = 
+extern def getNow() at io: Int = 
   js "Date.now()"
   chez "(current-milliseconds)"
   llvm """
