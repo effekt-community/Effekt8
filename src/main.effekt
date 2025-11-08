@@ -13,7 +13,7 @@ def main(): Unit = {
       cpu_.initCPU(rom)
       renderer.update(box {() => cpu_.cycleCPU()})
     }
-    renderer.init(plsRender)
+    renderer.init(box plsRender)
     ()
   ()
 }
