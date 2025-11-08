@@ -17,7 +17,7 @@ CPU Cycle and Effects:
 6. Wait for next cycle
 */
 
-extern def getNow() at io: Int = 
+extern def getNow() at io: Int =
   js "Date.now()"
   chez "(current-milliseconds)"
   llvm """
@@ -50,12 +50,12 @@ def convertKey(key: String): Int = key match {
     case "c" => 11
     case "v" => 15
     case _ => -1
-} 
+}
 
 def makeCPU() {r: Renderer} = {
   // Initialize the RAM
   val ram = makeRam()
-  
+
   // Initialize the CPU registers
   val v: Ref[ByteArray] = ref(allocate(16)) // 16 8-bit registers
   val i = ref(0) // 16-bit register treat as 12-bit !!!
@@ -72,7 +72,7 @@ def makeCPU() {r: Renderer} = {
   val last_display_update_time = ref(getNow())
   val last_timer_update = ref(getNow())
 
-  new CPU {
+  def cpu = new CPU {
     def initCPU(rom: ByteArray) = {
       ram.init(rom)
       r.clear()
@@ -395,10 +395,11 @@ def makeCPU() {r: Renderer} = {
           } else {
             r.stopBeep()
           }
-          
+
           last_timer_update.set(currentTime)
         }
       }
     }
   }
+  return box cpu
 }

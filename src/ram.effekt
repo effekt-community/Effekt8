@@ -45,7 +45,7 @@ def loadRom(ram: Ref[ByteArray], rom: ByteArray): Unit = rom.foreachIndex { (i, 
 
 def makeRam() = {
   val ram: Ref[ByteArray] = ref(allocate(4096)) // 4KB of memory
-  new Ram {
+  box new Ram {
     def getAddr(address: Int) = get(ram, address)
     def setAddr(address: Int, byte: Byte) = set(ram, address, byte)
     def init(rom: ByteArray) = {
