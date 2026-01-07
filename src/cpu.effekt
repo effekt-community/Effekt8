@@ -131,94 +131,94 @@ def makeCPU() {r: Renderer} = {
           }
           // Skip next instruction if VX == NN
           case 3 => {
-            if (v.get.unsafeGet(x).toInt() == nn) {
+            if (v.get.get(x).toInt() == nn) {
               pc.set(pc.get + 2)
             }
             pc.set(pc.get + 2)
           }
           // Skip next instruction if VX != NN
           case 4 => {
-            if (v.get.unsafeGet(x).toInt() != nn) {
+            if (v.get.get(x).toInt() != nn) {
               pc.set(pc.get + 2)
             }
             pc.set(pc.get + 2)
           }
           // Skip next instruction if VX == VY
           case 5 => {
-            if (v.get.unsafeGet(x).toInt() == v.get.unsafeGet(y).toInt()) {
+            if (v.get.get(x).toInt() == v.get.get(y).toInt()) {
               pc.set(pc.get + 2)
             }
             pc.set(pc.get + 2)
           }
           // Set VX = NN
           case 6 => {
-            v.get.unsafeSet(x, nn.toByte())
+            v.get.set(x, nn.toByte())
             pc.set(pc.get + 2)
           }
           // Set VX = VX + NN
           case 7 => {
-            v.get.unsafeSet(x, (v.get.unsafeGet(x).toInt() + nn).toByte())
+            v.get.set(x, (v.get.get(x).toInt() + nn).toByte())
             pc.set(pc.get + 2)
           }
           case 8 => {
             n match {
               // Set VX = VY
               case 0 => {
-                v.get.unsafeSet(x, v.get.unsafeGet(y))
+                v.get.set(x, v.get.get(y))
               }
               // Set VX = VX OR VY
               case 1 => {
-                v.get.unsafeSet(x, bitwiseOr(v.get.unsafeGet(x).toInt(), v.get.unsafeGet(y).toInt()).toByte())
+                v.get.set(x, bitwiseOr(v.get.get(x).toInt(), v.get.get(y).toInt()).toByte())
               }
               // Set VX = VX AND VY
               case 2 => {
-                v.get.unsafeSet(x, bitwiseAnd(v.get.unsafeGet(x).toInt(), v.get.unsafeGet(y).toInt()).toByte())
+                v.get.set(x, bitwiseAnd(v.get.get(x).toInt(), v.get.get(y).toInt()).toByte())
               }
               // Set VX = VX XOR VY
               case 3 => {
-                v.get.unsafeSet(x, bitwiseXor(v.get.unsafeGet(x).toInt(), v.get.unsafeGet(y).toInt()).toByte())
+                v.get.set(x, bitwiseXor(v.get.get(x).toInt(), v.get.get(y).toInt()).toByte())
               }
               // Set VX = VX + VY, set VF = carry
               case 4 => {
-                val sum = v.get.unsafeGet(x).toInt() + v.get.unsafeGet(y).toInt()
-                v.get.unsafeSet(x, sum.toByte())
-                v.get.unsafeSet(15, (if (sum > 255) 1 else 0).toByte())
+                val sum = v.get.get(x).toInt() + v.get.get(y).toInt()
+                v.get.set(x, sum.toByte())
+                v.get.set(15, (if (sum > 255) 1 else 0).toByte())
                 
               }
               // Set VX = VX - VY, set VF = NOT borrow
               case 5 => {
-                val vx = v.get.unsafeGet(x).toInt()
-                val vy = v.get.unsafeGet(y).toInt()
+                val vx = v.get.get(x).toInt()
+                val vy = v.get.get(y).toInt()
                 val sub = vx - vy
 
-                v.get.unsafeSet(x, sub.toByte())
-                v.get.unsafeSet(15, (if (vx > vy) 1 else 0).toByte())
+                v.get.set(x, sub.toByte())
+                v.get.set(15, (if (vx > vy) 1 else 0).toByte())
               }
               // Set VX = VX SHR 1 and VF = LSB of VX
               case 6 => {
-                val vx = v.get.unsafeGet(x).toInt()
+                val vx = v.get.get(x).toInt()
                 val lsb = bitwiseAnd(vx, 1)
                 val vx_ = bitwiseShr(vx, 1)
-                v.get.unsafeSet(x, vx_.toByte())
-                v.get.unsafeSet(15, lsb.toByte())
+                v.get.set(x, vx_.toByte())
+                v.get.set(15, lsb.toByte())
               }
               // Set VX = VY - VX, set VF = NOT borrow
               case 7 => {
-                val vx = v.get.unsafeGet(x).toInt()
-                val vy = v.get.unsafeGet(y).toInt()
+                val vx = v.get.get(x).toInt()
+                val vy = v.get.get(y).toInt()
                 val sub = vy - vx
                 
-                v.get.unsafeSet(x, sub.toByte())
-                v.get.unsafeSet(15, (if (vy > vx) 1 else 0).toByte())
+                v.get.set(x, sub.toByte())
+                v.get.set(15, (if (vy > vx) 1 else 0).toByte())
               }
               // Set VX = VX SHL 1 and VF = MSB of VX
               case 14 => {
-                val vx = v.get.unsafeGet(x).toInt()
+                val vx = v.get.get(x).toInt()
                 val msb = bitwiseAnd(vx, 128)
                 val vx_ = vx * 2
                 val vf = bitwiseShr(msb, 7)
-                v.get.unsafeSet(x, vx_.toByte())
-                v.get.unsafeSet(15, vf.toByte())
+                v.get.set(x, vx_.toByte())
+                v.get.set(15, vf.toByte())
               }
             } else {
               r.log("Unknown Instruction: " ++ show(inst))
@@ -227,7 +227,7 @@ def makeCPU() {r: Renderer} = {
           }
           // Skip next instruction if VX != VY
           case 9 => {
-            if (v.get.unsafeGet(x).toInt() != v.get.unsafeGet(y).toInt()) {
+            if (v.get.get(x).toInt() != v.get.get(y).toInt()) {
               pc.set(pc.get + 2)
             }
             pc.set(pc.get + 2)
@@ -239,19 +239,19 @@ def makeCPU() {r: Renderer} = {
           }
           // Jump to location NNN + V0
           case 11 => {
-            pc.set(nnn + v.get.unsafeGet(0).toInt())
+            pc.set(nnn + v.get.get(0).toInt())
           }
 
           // Set VX = random byte AND NN
           case 12 => {
             val randInt: Int = floor(random() * 255.0)
-            v.get.unsafeSet(x, bitwiseAnd(randInt, nn).toByte())
+            v.get.set(x, bitwiseAnd(randInt, nn).toByte())
             pc.set(pc.get + 2)
           }
           // Display n-byte sprite starting at memory location I at (VX, VY), set VF = collision
           case 13 => {
-            val vx = v.get.unsafeGet(x).toInt()
-            val vy = v.get.unsafeGet(y).toInt()
+            val vx = v.get.get(x).toInt()
+            val vy = v.get.get(y).toInt()
             var collision = false
             var yline = 0
             
@@ -285,15 +285,15 @@ def makeCPU() {r: Renderer} = {
               yline = yline + 1
             }
             
-            v.get.unsafeSet(15, (if (collision) 1 else 0).toByte())
+            v.get.set(15, (if (collision) 1 else 0).toByte())
             pc.set(pc.get + 2)
           }
           case 14 => {
             nn match {
               // Skip next instruction if key with the value of VX is not pressed
               case 161 => {
-                val vx = v.get.unsafeGet(x).toInt()
-                if (key != v.get.unsafeGet(x).toInt()) {
+                val vx = v.get.get(x).toInt()
+                if (key != v.get.get(x).toInt()) {
                   pc.set(pc.get + 4)
                 } else {
                   pc.set(pc.get + 2)
@@ -301,8 +301,8 @@ def makeCPU() {r: Renderer} = {
               }
               // Skip next instruction if key with the value of VX is pressed
               case 158 => {
-                val vx = v.get.unsafeGet(x).toInt()
-                if (key != -1 && key == v.get.unsafeGet(x).toInt()) {
+                val vx = v.get.get(x).toInt()
+                if (key != -1 && key == v.get.get(x).toInt()) {
                   pc.set(pc.get + 4)
                 } else {
                   pc.set(pc.get + 2)
@@ -316,39 +316,39 @@ def makeCPU() {r: Renderer} = {
             nn match {
               // Set VX = delay timer value
               case 7 => {
-                v.get.unsafeSet(x, delay.get)
+                v.get.set(x, delay.get)
                 pc.set(pc.get + 2)
               }
               // Wait for a key press, store the value of the key in VX
               case 10 => {
                 if (key >= 0) {
-                  v.get.unsafeSet(x, key.toByte())
+                  v.get.set(x, key.toByte())
                   pc.set(pc.get + 2)
                 }
               }
               // SET delay timer = VX
               case 21 => {
-                delay.set(v.get.unsafeGet(x))
+                delay.set(v.get.get(x))
                 pc.set(pc.get + 2)
               }
               // Set sound timer = VX
               case 24 => {
-                sound.set(v.get.unsafeGet(x))
+                sound.set(v.get.get(x))
                 pc.set(pc.get + 2)
               }
               // SET I = I + VX
               case 30 => {
-                i.set(i.get + v.get.unsafeGet(x).toInt())
+                i.set(i.get + v.get.get(x).toInt())
                 pc.set(pc.get + 2)
               }
               // Set I = location of sprite for digit VX
               case 41 => {
-                i.set(v.get.unsafeGet(x).toInt() * 5)
+                i.set(v.get.get(x).toInt() * 5)
                 pc.set(pc.get + 2)
               }
               // Store BCD representation of VX in memory locations I, I+1, and I+2
               case 51 => {
-                val vx = v.get.unsafeGet(x).toInt()
+                val vx = v.get.get(x).toInt()
                 ram.setAddr(i.get, (vx / 100).toByte())
                 ram.setAddr(i.get + 1, mod((vx / 10), 10).toByte())
                 ram.setAddr(i.get + 2, mod(vx, 10).toByte())
@@ -358,7 +358,7 @@ def makeCPU() {r: Renderer} = {
               case 85 => {
                 var index = 0
                 while (index <= x) {
-                  ram.setAddr(i.get + index, v.get.unsafeGet(index))
+                  ram.setAddr(i.get + index, v.get.get(index))
                   index = index + 1
                 }
                 // i = i + x + 1
@@ -368,7 +368,7 @@ def makeCPU() {r: Renderer} = {
               case 101 => {
                 var index = 0
                 while (index <= x) {
-                  v.get.unsafeSet(index, ram.getAddr(i.get + index))
+                  v.get.set(index, ram.getAddr(i.get + index))
                   index = index + 1
                 }
                 // i = i + x + 1

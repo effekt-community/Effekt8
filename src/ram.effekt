@@ -8,9 +8,9 @@ interface Ram {
   def init(rom: ByteArray): Unit  
 }
 
-def get(ram: Ref[ByteArray], address: Int): Byte = ram.get.unsafeGet(address)
-def set(ram: Ref[ByteArray], address: Int, byte: Byte): Unit = ram.get.unsafeSet(address, byte)
-def set(ram: Ref[ByteArray], address: Int, value: Int): Unit = ram.get.unsafeSet(address, value.toByte)
+def get(ram: Ref[ByteArray], address: Int): Byte = ram.get.get(address)
+def set(ram: Ref[ByteArray], address: Int, byte: Byte): Unit = ram.get.set(address, byte)
+def set(ram: Ref[ByteArray], address: Int, value: Int): Unit = ram.get.set(address, value.toByte)
 
 // Load the predefined fontset. There is no better way to do this, since they are hardcoded values.
 def loadFont(ram: Ref[ByteArray]): Unit = {
