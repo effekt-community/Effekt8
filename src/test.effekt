@@ -50,8 +50,8 @@ def main() = mainSuite("CHIP-8") {
   //     val cpu = makeCPU() { renderer }
   //     val testRom = allocate(4)
   //     // Set up a simple instruction in ROM
-  //     testRom.unsafeSet(0, 96) // 0x60
-  //     testRom.unsafeSet(1, 66) // 0x42
+  //     testRom.set(0, 96) // 0x60
+  //     testRom.set(1, 66) // 0x42
   //     cpu.initCPU(testRom)
   //     cpu.cycleCPU()
       
