@@ -74,7 +74,7 @@ def makeCPU() {r: Renderer} = {
 
   def cpu = new CPU {
     def initCPU(rom: ByteArray) = {
-      ram.init(rom)
+      ram.Ram::init(rom)
       r.clear()
     }
     def cycleCPU() = {
