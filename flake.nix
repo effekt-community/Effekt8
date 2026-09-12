@@ -27,12 +27,12 @@
 
       ## Effekt configuration
       effektConfig = {
-          ## Uncomment and set a specific version if needed:
-          # version = "0.10.0";
+        ## Uncomment and set a specific version if needed:
+        # version = "0.10.0";
 
-          ## Select the backends that your project works on:
-          backends = bs: with bs; [ js-web ];
-        };
+        ## Select the backends that your project works on:
+        backends = bs: with bs; [ js-web ];
+      };
     in {
       packages = forAllSystems (system:
         let
